@@ -1,0 +1,114 @@
+@import "tailwindcss";
+
+/* "Atlas": a calm encyclopedia on warm paper. Colour shows how sure the market is. */
+@theme {
+  --color-paper: #f7f4ee;
+  --color-surface: #ffffff;
+  --color-sunk: #f1ece3;
+  --color-line: #e7e1d6;
+  --color-line-strong: #d6cec0;
+  --color-ink: #1c1917;
+  --color-body: #292524;
+  --color-muted: #57534e;
+  --color-faint: #6b645d;
+
+  /* Confidence scale: blue = true, orange = false (readable for colour-blind people too). */
+  --color-certain: #1e40af;
+  --color-likely: #2563eb;
+  --color-likely-line: #3b82f6;
+  --color-disputed: #6b645d;
+  --color-unlikely: #c2410c;
+  --color-false: #9a3412;
+  --color-true-tint: #eef3ff;
+  --color-false-tint: #fff1e6;
+
+  --font-serif: var(--font-newsreader), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
+html {
+  background: var(--color-paper);
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* A fact inside the article text. */
+.fact {
+  text-decoration-line: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 5px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 160ms ease;
+}
+.fact:hover {
+  background: rgba(30, 64, 175, 0.06);
+}
+.fact:focus-visible {
+  outline: 2px solid var(--color-likely);
+  outline-offset: 2px;
+}
+
+/* When the AI rewrites a sentence. */
+@keyframes rewrite {
+  0% {
+    background: rgba(250, 204, 21, 0.55);
+    filter: blur(2px);
+    opacity: 0.2;
+  }
+  35% {
+    filter: blur(0);
+    opacity: 1;
+  }
+  100% {
+    background: transparent;
+  }
+}
+.rewrite {
+  animation: rewrite 2.4s ease-out;
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.96);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.pop {
+  animation: pop 180ms ease-out;
+}
+
+@keyframes rise {
+  0% {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+.rise {
+  animation: rise 260ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rewrite,
+  .pop,
+  .rise {
+    animation: none;
+  }
+}

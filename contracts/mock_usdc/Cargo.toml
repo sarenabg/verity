@@ -1,0 +1,23 @@
+[package]
+name = "mock-usdc"
+description = "Test-network stand-in for USDC (6 decimals, anyone can mint). Never deploy to mainnet."
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.92"
+resolver = "3"
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+near-sdk = "5.27.0"
+near-contract-standards = "5.27.0"
+
+[profile.release]
+codegen-units = 1
+opt-level = "z"
+lto = true
+debug = false
+panic = "abort"
+overflow-checks = true
