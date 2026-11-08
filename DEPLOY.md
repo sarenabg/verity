@@ -32,7 +32,7 @@ Rulings use a 1 USDC deposit, disputes a 2 USDC deposit, and the dispute window 
 near contract deploy verity.YOU.near use-file contracts/verity_market/target/near/verity_market.wasm with-init-call new json-args '{"owner":"YOU.near","token":"17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1","judge":"verity.YOU.near","panel":"verity.YOU.near","ruling_bond":"1000000","dispute_bond":"2000000","dispute_window_ns":3600000000000,"min_bet":"100000"}' prepaid-gas '100.0 Tgas' attached-deposit '0 NEAR' network-config mainnet sign-with-keychain send
 ```
 
-The wasm file comes from `cd contracts/verity_market && cargo near build non-reproducible-wasm --skip-rust-version-check`. Its SHA-256 is printed by the build.
+The wasm file comes from `cd contracts/verity_market && cargo near build non-reproducible-wasm --skip-rust-version-check`. Check it with `shasum -a 256 target/near/verity_market.wasm`; the build tested here was `f339d5fe5a7a7a14992448c54d6c1d9c7766d4c7b092f1905bcaf768f6d39261`.
 
 ## 4. Give the AI judge a limited key
 
@@ -69,6 +69,23 @@ Then redeploy the site.
 - Switch to **Live** in the header and open Mount Everest. The prices should match the Demo starting prices.
 - Bet 0.25 USDC on a fact. Your wallet asks you to confirm, the price moves, and the bet appears in **My bets**.
 - Cash out, then **Withdraw to wallet**.
+
+## Option: Live with test dollars on testnet (no real money)
+
+Testnet-only projects are eligible (hackathon rule Q-010), so the hosted site can show Live without anyone spending real money. A testnet contract is already set up with a test USDC token that anyone can mint:
+
+| Name (Vercel → Environment Variables) | Value |
+|---|---|
+| `NEXT_PUBLIC_VERITY_CONTRACT` | `verity-market-4m6xzj.testnet` |
+| `NEXT_PUBLIC_USDC` | `verity-musdc-4m6xzj.testnet` |
+| `NEXT_PUBLIC_NEAR_NETWORK` | `testnet` |
+| `NEXT_PUBLIC_NEAR_RPC` | `https://test.rpc.fastnear.com` |
+| `NEXT_PUBLIC_EXPLORER` | `https://testnet.nearblocks.io` |
+| `VERITY_JUDGE_ACCOUNT`, `VERITY_JUDGE_KEY` | copy from `web/.env.local` (the key is secret) |
+
+Then redeploy. Visitors see **Live · testnet**, connect a testnet wallet (MyNearWallet and Meteor support testnet), and tap **Get 20 test dollars** on any market. Pay with any coin still uses mainnet NEAR Intents quotes, because NEAR Intents has no testnet.
+
+Settled facts stay settled. If too many are settled, set up a fresh testnet contract with `web/scripts/live-setup.mts`.
 
 ## Tested first on testnet
 

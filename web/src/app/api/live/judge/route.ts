@@ -30,19 +30,31 @@ export async function POST(req: Request) {
 
   const ruling = await judge(claim, panel);
   const verdict = ruling.verdict === "unsettled" ? null : ruling.verdict === "true";
-  try {
-    const [{ Account }, { JsonRpcProvider }, { KeyPairSigner }] = await Promise.all([import("@near-js/accounts"), import("@near-js/providers"), import("@near-js/signers")]);
-    const account = new Account(accountId, new JsonRpcProvider({ url: LIVE.rpc }), KeyPairSigner.fromSecretKey(key as `ed25519:${string}`));
-    const outcome = await account.callFunctionRaw({
-      contractId: LIVE.contract,
-      methodName: panel ? "panel_ruling" : "propose_ruling",
-      args: { claim: claim.id, verdict, evidence: evidence(ruling) },
-      gas: 50n * 10n ** 12n,
-    });
-    return NextResponse.json({ verdict: ruling.verdict, reason: ruling.reason, panel, tx: outcome.transaction?.hash ?? null });
-  } catch (e) {
-    return NextResponse.json({ error: `Couldn't post the ruling: ${(e as Error).message.slice(0, 160)}` }, { status: 502 });
+  const [{ Account }, { JsonRpcProvider }, { KeyPairSigner }] = await Promise.all([import("@near-js/accounts"), import("@near-js/providers"), import("@near-js/signers")]);
+  const account = new Account(accountId, new JsonRpcProvider({ url: LIVE.rpc }), KeyPairSigner.fromSecretKey(key as `ed25519:${string}`));
+
+  // Public RPC nodes sometimes reject a good transaction ("Transaction has expired", timeouts).
+  // Retry a few times; if the ruling turns out to be on-chain already, that's a success, so a
+  // retry can never post twice (the contract also only accepts a ruling while it is waiting).
+  let lastError = "";
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const outcome = await account.callFunctionRaw({
+        contractId: LIVE.contract,
+        methodName: panel ? "panel_ruling" : "propose_ruling",
+        args: { claim: claim.id, verdict, evidence: evidence(ruling) },
+        gas: 50n * 10n ** 12n,
+      });
+      return NextResponse.json({ verdict: ruling.verdict, reason: ruling.reason, panel, tx: outcome.transaction?.hash ?? null });
+    } catch (e) {
+      lastError = (e as Error).message;
+      const now = await view<ChainClaim | null>(LIVE.contract, "get_claim", { id: claim.id }).catch(() => null);
+      const still = now && typeof now.status === "object" && (panel ? "Disputed" in now.status : "Judging" in now.status);
+      if (now && !still) return NextResponse.json({ verdict: ruling.verdict, reason: ruling.reason, panel, tx: null });
+      await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+    }
   }
+  return NextResponse.json({ error: `Couldn't post the ruling: ${lastError.slice(0, 160)}` }, { status: 502 });
 }
 
 /** Compact JSON kept on-chain: the reason and each model's vote with its TEE signature info. */

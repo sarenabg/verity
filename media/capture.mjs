@@ -16,6 +16,19 @@ const LIVE = flag("live", "");
 fs.mkdirSync(out, { recursive: true });
 
 const browser = await chromium.launch();
+// Captures from a local dev server: hide Next's development badge.
+const newContext = browser.newContext.bind(browser);
+browser.newContext = async (o) => {
+  const c = await newContext(o);
+  await c.addInitScript(() =>
+    document.addEventListener("DOMContentLoaded", () => {
+      const s = document.createElement("style");
+      s.textContent = "nextjs-portal{display:none!important}";
+      document.head.append(s);
+    }),
+  );
+  return c;
+};
 const shot = async (page, name, el) => {
   const f = path.join(out, `${name}.png`);
   if (el) {

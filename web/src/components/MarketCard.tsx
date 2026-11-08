@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useBook, type Book } from "@/lib/book";
 import type { Claim } from "@/lib/content";
-import { LIVE } from "@/lib/config";
-import { loadHistory } from "@/lib/live";
+import { LIVE, TESTNET } from "@/lib/config";
+import { liveMintTestDollars, loadHistory } from "@/lib/live";
 import { BAND_LABEL, bandOf, cents, pct, quoteBuy, quoteSell, type Side } from "@/lib/market";
+import { amountDigits, cleanAmount } from "@/lib/amount";
 import { addMoney, type Ruling, type Vote } from "@/lib/store";
 import { LivePay } from "./LivePay";
 import { useConnect } from "./ModeControls";
@@ -41,7 +42,15 @@ export function MarketCard({ claim, onBet }: { claim: Claim; onBet?: (rewritten:
   const pos = b.position(claim.id);
   const color = bandHex(p);
   const chips = live ? [0.25, 0.5, 1] : [10, 50, 100];
-  const notLive = live && !b.live?.claims[claim.id];
+  const onChain = Boolean(b.live?.claims[claim.id]);
+  const onChainOrDemo = !live || onChain;
+  // More than the money you have (Demo cash, or USDC in the connected wallet).
+  const tooMuch = usd > 0 && b.balance !== null && usd > b.balance + 1e-9 && !(live && !b.account);
+  const usdText = b.money(usd, live ? undefined : amountDigits(usd));
+  const liveStatus = b.live?.status;
+  const loadingLive = live && !onChain && (liveStatus === "idle" || liveStatus === "loading");
+  const liveDown = live && !onChain && liveStatus === "error";
+  const notLive = live && !onChain && liveStatus === "ready";
 
   const place = useCallback(
     (paidWith?: string) =>
@@ -51,9 +60,9 @@ export function MarketCard({ claim, onBet }: { claim: Claim; onBet?: (rewritten:
         if (!r.ok) return toast(r.error);
         onBet?.(Boolean(r.rewritten));
         if (r.rewritten) toast("The AI rewrote this fact on the page", "rewrite");
-        else toast(`Bet placed: ${b.money(usd)} on ${side === "yes" ? "True" : "False"}`);
+        else toast(`Bet placed: ${usdText} on ${side === "yes" ? "True" : "False"}`);
       }),
-    [b, claim.id, side, usd, live, openConnect, onBet, runBet],
+    [b, claim.id, side, usd, usdText, live, openConnect, onBet, runBet],
   );
 
   const onPaid = useCallback(
@@ -91,9 +100,20 @@ export function MarketCard({ claim, onBet }: { claim: Claim; onBet?: (rewritten:
         <Sparkline points={points} recent={recent} color={color} />
       </div>
 
+      {loadingLive && (
+        <p className="flex items-center gap-2.5 rounded-2xl bg-paper p-4 text-sm text-muted" role="status">
+          <span className="size-2.5 animate-pulse rounded-full bg-certain" />
+          Loading the live market from NEAR…
+        </p>
+      )}
+      {liveDown && (
+        <p className="rounded-2xl bg-false-tint p-4 text-sm text-false" role="alert">
+          Can&apos;t reach NEAR right now, so live prices may be out of date. Trying again every few seconds.
+        </p>
+      )}
       {notLive && <p className="rounded-2xl bg-paper p-4 text-sm text-muted">This fact isn&apos;t open for real bets yet. Switch to Demo to try it.</p>}
 
-      {!settled && !notLive && (
+      {!settled && onChainOrDemo && (
         <>
           <div className="mb-3 grid grid-cols-2 gap-2.5" role="radiogroup" aria-label="Pick a side">
             {(["yes", "no"] as const).map((sd) => {
@@ -124,7 +144,7 @@ export function MarketCard({ claim, onBet }: { claim: Claim; onBet?: (rewritten:
               id={`amt-${claim.id}`}
               inputMode="decimal"
               value={amount}
-              onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))}
+              onChange={(e) => setAmount(cleanAmount(e.target.value))}
               className="tabular w-16 min-w-0 flex-1 bg-transparent text-lg font-semibold outline-none"
             />
             {live && <span className="font-semibold">USDC</span>}
@@ -132,7 +152,7 @@ export function MarketCard({ claim, onBet }: { claim: Claim; onBet?: (rewritten:
           </div>
           <div className="mb-4 flex gap-2">
             {chips.map((v) => (
-              <button key={v} onClick={() => setAmount(String(v))} className="tabular rounded-full border border-line px-3.5 py-1.5 text-sm hover:border-ink">
+              <button key={v} aria-pressed={Number(amount) === v} onClick={() => setAmount(String(v))} className={`tabular rounded-full border px-3.5 py-1.5 text-sm hover:border-ink ${Number(amount) === v ? "border-ink" : "border-line"}`}>
                 {live ? v : b.money(v)}
               </button>
             ))}
@@ -140,13 +160,44 @@ export function MarketCard({ claim, onBet }: { claim: Claim; onBet?: (rewritten:
           </div>
 
           <button
-            disabled={(!quote && !(live && !b.account)) || betting}
+            disabled={(!quote && !(live && !b.account)) || betting || tooMuch}
             onClick={() => void place()}
             className="w-full rounded-2xl bg-ink py-4 text-base font-semibold text-white transition hover:bg-black disabled:opacity-40"
           >
-            {live && !b.account ? "Connect a wallet to bet" : betting ? b.pending ?? "Placing bet…" : `Bet ${b.money(usd, live ? undefined : 0)} on ${side === "yes" ? "True" : "False"}`}
+            {live && !b.account
+              ? "Connect a wallet to bet"
+              : betting
+                ? (b.pending ?? "Placing bet…")
+                : !(usd > 0)
+                  ? "Enter an amount"
+                  : tooMuch
+                    ? live
+                      ? "Not enough USDC in your wallet"
+                      : "Not enough money"
+                    : `Bet ${usdText} on ${side === "yes" ? "True" : "False"}`}
           </button>
-          {live && b.account && <p className="mt-2 text-center text-[13px] text-faint">Your wallet asks you to confirm</p>}
+          {tooMuch && live && TESTNET ? (
+            <p className="mt-2 text-center text-[13px] text-muted">
+              You have {b.money(b.balance ?? 0, 2)}.{" "}
+              <button
+                disabled={betting}
+                onClick={() =>
+                  runBet(async () => {
+                    const r = await liveMintTestDollars(20);
+                    toast(r.ok ? "20 test dollars added to your wallet" : r.error);
+                  }, "mint")
+                }
+                className="font-semibold text-certain underline underline-offset-2"
+              >
+                Get 20 test dollars
+              </button>{" "}
+              (testnet only, no real value).
+            </p>
+          ) : tooMuch ? (
+            <p className="mt-2 text-center text-[13px] text-false">You have {b.money(b.balance ?? 0, 2)}. Pay with any coin instead, or bet less.</p>
+          ) : (
+            live && b.account && <p className="mt-2 text-center text-[13px] text-faint">Your wallet asks you to confirm</p>
+          )}
           <button
             disabled={!quote}
             onClick={() => (live && !b.account ? openConnect() : setPayOpen(true))}
@@ -192,7 +243,7 @@ export function MarketCard({ claim, onBet }: { claim: Claim; onBet?: (rewritten:
       {live ? (
         <LivePay open={payOpen} usd={usd} side={side} claimId={claim.id} onClose={() => setPayOpen(false)} onReady={() => void place()} />
       ) : (
-        <PayWithCoin open={payOpen} usd={usd} title={`Bet ${b.money(usd)} on ${side === "yes" ? "True" : "False"}`} onClose={() => setPayOpen(false)} onPaid={onPaid} />
+        <PayWithCoin open={payOpen} usd={usd} title={`Bet ${usdText} on ${side === "yes" ? "True" : "False"}`} onClose={() => setPayOpen(false)} onPaid={onPaid} />
       )}
     </div>
   );
@@ -266,17 +317,17 @@ function Settle({ b, claim, ruling, settled, busy, run: guard }: { b: Book; clai
     return () => clearInterval(t);
   }, []);
   const live = b.mode === "live";
-  const run = (fn: () => Promise<{ ok: boolean; error?: string }>) =>
+  const run = (fn: () => Promise<{ ok: boolean; error?: string }>, key: string) =>
     guard(async () => {
       const r = await fn();
       if (!r.ok && r.error) toast(r.error);
-    });
+    }, key);
 
   if (!ruling) {
     if (settled || (live && !b.live?.claims[claim.id])) return null;
     return (
       <div className="mt-5 border-t border-line pt-4">
-        <button disabled={busy} onClick={() => run(() => b.request(claim.id))} className="flex w-full items-center justify-between gap-3 text-left text-sm text-muted hover:text-ink">
+        <button disabled={busy} onClick={() => run(() => b.request(claim.id), "ask")} className="flex w-full items-center justify-between gap-3 text-left text-sm text-muted hover:text-ink">
           <span className="flex items-center gap-2">
             <Gavel />
             Ask the AI judge to settle this
@@ -298,7 +349,7 @@ function Settle({ b, claim, ruling, settled, busy, run: guard }: { b: Book; clai
             {ruling.stage === "judging" ? "The AI judge is reading the evidence…" : "Three AI judges are reviewing the dispute…"}
           </p>
           {live && (
-            <button onClick={() => run(() => b.nudge(claim.id, ruling.stage === "panel"))} className="mt-2 text-sm font-medium text-certain hover:underline">
+            <button onClick={() => run(() => b.nudge(claim.id, ruling.stage === "panel"), "nudge")} className="mt-2 text-sm font-medium text-certain hover:underline">
               Taking long? Wake the judge
             </button>
           )}
@@ -318,19 +369,19 @@ function Settle({ b, claim, ruling, settled, busy, run: guard }: { b: Book; clai
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <span className="tabular text-sm text-muted">{left > 0 ? `${fmtLeft(left)} left to dispute` : "Dispute time is over"}</span>
               {left > 0 && (
-                <button disabled={busy} onClick={() => run(() => b.dispute(claim.id))} className="ml-auto rounded-full border border-line-strong px-3.5 py-1.5 text-sm font-medium hover:border-ink">
+                <button disabled={busy} onClick={() => run(() => b.dispute(claim.id), "dispute")} className="ml-auto rounded-full border border-line-strong px-3.5 py-1.5 text-sm font-medium hover:border-ink">
                   Dispute · {b.money(b.bonds.dispute, 0)}
                 </button>
               )}
               {(!live || left === 0) && (
-                <button disabled={busy} onClick={() => run(() => b.advance(claim.id))} className={`rounded-full bg-ink px-3.5 py-1.5 text-sm font-medium text-white ${left === 0 ? "ml-auto" : ""}`}>
+                <button disabled={busy} onClick={() => run(() => b.advance(claim.id), "advance")} className={`rounded-full bg-ink px-3.5 py-1.5 text-sm font-medium text-white ${left === 0 ? "ml-auto" : ""}`}>
                   {live ? "Make it final" : `Skip ${b.bonds.windowHours}h (demo)`}
                 </button>
               )}
             </div>
           )}
           {ruling.stage === "unsettled" && !settled && (
-            <button disabled={busy} onClick={() => run(() => b.request(claim.id))} className="mt-3 text-sm font-medium text-certain hover:underline">
+            <button disabled={busy} onClick={() => run(() => b.request(claim.id), "ask")} className="mt-3 text-sm font-medium text-certain hover:underline">
               Ask again
             </button>
           )}

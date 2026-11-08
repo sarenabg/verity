@@ -147,6 +147,7 @@ export function Header() {
           {[50, 100, 250].map((v) => (
             <button
               key={v}
+              aria-pressed={usd === v}
               onClick={() => setUsd(v)}
               className={`tabular rounded-2xl border py-5 text-xl font-semibold ${usd === v ? "border-ink bg-ink text-white" : "border-line hover:border-ink"}`}
             >

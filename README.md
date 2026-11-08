@@ -18,7 +18,9 @@ There are two modes, switched with the pill in the header:
 
 ## Run it (2 minutes, no keys needed)
 
-You need Node 20+.
+**Quickest:** open the hosted demo at https://verity-pied-phi.vercel.app (Demo mode, play money, no wallet).
+
+To run it yourself you need Node 20+.
 
 ```bash
 cd web
@@ -37,7 +39,8 @@ Open http://localhost:3200. You start in **Demo** with $1,000 of play money.
 5. **Settle a fact:** on [Great Wall of China](http://localhost:3200/wiki/great-wall-of-china), bet on *False*, then click *Ask the AI judge to settle this*. The judge rules False, citing China's first astronaut. Click *Skip 48h (demo)* to pass the dispute window. The fact gets a ✓ and your winning shares pay $1 each. Or click *Dispute* instead, and three AI judges vote.
 6. **Ask about an open question:** on Mount Everest, ask the judge about Mallory. It answers *"Can't settle yet"*, returns your deposit, and the market stays open.
 7. **[My bets](http://localhost:3200/bets)** shows your balance, open bets with profit or loss, and activity. *Reset demo* starts over.
-8. **On a phone** (or a narrow window), tap any underlined fact. The market opens as a bottom sheet.
+8. **Search** from the top bar (the magnifier on phones): try "tenzing" or "octopus dream". Arrow keys and Enter work.
+9. **On a phone** (or a narrow window), tap any underlined fact. The market opens as a bottom sheet; after a bet that rewrites the page, the sheet closes so you see the new sentence.
 
 ### Live mode
 
@@ -46,6 +49,8 @@ Live is on the hosted site once the contract is deployed (see [DEPLOY.md](DEPLOY
 - **Cash out** calls `sell`; then **Withdraw to wallet**.
 - **Ask the AI judge** posts a 1 USDC bond. The app's server runs the NEAR AI judge and posts the ruling on-chain using a key that can only call the two ruling functions.
 - **Pay with any coin** gives a real one-time NEAR Intents address. The coins arrive as USDC in your own NEAR account, and then you confirm the bet.
+
+When the site points at a testnet contract (`NEXT_PUBLIC_NEAR_NETWORK=testnet`), Live is labelled **Live · testnet** and says the dollars are test dollars.
 
 ## Checks
 
@@ -74,7 +79,7 @@ npm run dev   # with web/.env.local pointing at the testnet contract (see web/.e
 npx tsx scripts/live-e2e.mts --contract <market>.testnet --token <test-usdc>.testnet --bettor <bettor>.testnet
 ```
 
-`live-e2e` runs 16 checks:
+`live-e2e` runs 15 checks. Settling is permanent, so each run picks checkable facts that are still open on the contract:
 - bet → price moves → cash out;
 - ask the judge (through the app's `/api/live/judge`) → ruling posted on-chain → finalize after the dispute window;
 - dispute → 3-model panel settles it;
@@ -147,6 +152,13 @@ RESEARCH.md                what exists on NEAR today, and design notes
 ## Tracks
 
 Open Innovation (a new primitive: knowledge as markets), Privacy & Private AI (TEE-verified AI writer and judges), Unstoppable DeFi (perpetual markets; bet from any chain through NEAR Intents).
+
+## Hackathon disclosures
+
+- **Baseline:** none. Every line was written during the hackathon; the first commit is from 8 Nov 2026 (`git log --reverse`).
+- **Existing product on another chain:** none. Verity is new and built only on NEAR.
+- **Other project by the same person:** _to be filled in by the team lead before submitting (rule Q-015)._
+- **Testnet:** Live mode is tested end to end on NEAR testnet (`web/scripts/live-e2e.mts`). NEAR Intents has no testnet, so coin quotes and deposit addresses use mainnet's 1Click API.
 
 ## Credits
 

@@ -20,6 +20,13 @@ test("an instant action still ignores the second click of a double click", async
   assert.equal(calls, 1);
 });
 
+test("a different action right after the first one is not held up", async () => {
+  const g = createGuard();
+  await g.run(() => "asked", "ask");
+  assert.equal(await g.run(() => "disputed", "dispute"), "disputed");
+  assert.equal(await g.run(() => "asked again", "ask"), undefined);
+});
+
 test("the next click works after the cool-down, even if the first action failed", async () => {
   const g = createGuard(undefined, 30);
   await assert.rejects(g.run(() => Promise.reject(new Error("wallet closed"))));

@@ -196,6 +196,12 @@ export const liveCollect = (claimId: string) =>
 
 export const liveWithdraw = () => run("Confirm in your wallet", () => send([{ receiverId: LIVE.contract, methodName: "withdraw", args: {}, gasTgas: 60 }]));
 
+/** Testnet only: the test token (contracts/mock_usdc) lets anyone mint up to 1,000 test dollars. */
+export const liveMintTestDollars = (usdc = 20) =>
+  run("Confirm in your wallet", () =>
+    send([{ receiverId: LIVE.usdc, methodName: "mint", args: { account_id: state.account, amount: toUnits(usdc).toString() }, gasTgas: 30 }]),
+  );
+
 export const liveRegisterUsdc = () =>
   run("Confirm in your wallet", () =>
     send([{ receiverId: LIVE.usdc, methodName: "storage_deposit", args: { account_id: state.account, registration_only: true }, deposit: USDC_STORAGE, gasTgas: 30 }]),

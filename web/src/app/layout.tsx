@@ -18,8 +18,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${inter.variable} ${newsreader.variable}`}>
       <body className="min-h-screen">
+        <a
+          href="#content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[70] focus:rounded-full focus:bg-ink focus:px-4 focus:py-2.5 focus:text-sm focus:font-medium focus:text-white"
+        >
+          Skip to content
+        </a>
         <Header />
-        {children}
+        <div id="content" tabIndex={-1} className="outline-none">
+          {children}
+        </div>
         <footer className="mx-auto mt-24 max-w-6xl border-t border-line px-5 py-10 text-sm text-faint sm:px-10">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <span>Verity · built at the NEAR Hackathon, 2026</span>
