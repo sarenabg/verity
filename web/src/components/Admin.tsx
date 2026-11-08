@@ -10,6 +10,7 @@ import { setupPlan } from "@/lib/setup";
 import { send, USDC_STORAGE } from "@/lib/wallet";
 import { useConnect } from "./ModeControls";
 import { toast } from "./ui";
+import { useAction } from "./useAction";
 
 // Owner-only setup for Live mode. Every step is signed in the owner's own wallet.
 
@@ -19,32 +20,35 @@ export function Admin() {
   const l = useLive(true);
   const openConnect = useConnect();
   const [contractCanHold, setContractCanHold] = useState<boolean | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [busy, run] = useAction();
   const plan = setupPlan(PER_FACT);
 
-  useEffect(() => setMode("live"), []);
+  useEffect(() => setMode("live", false), []);
   useEffect(() => {
     if (LIVE.contract) void usdcRegistered(LIVE.contract).then(setContractCanHold).catch(() => setContractCanHold(null));
   }, [l.claims]);
 
-  if (!LIVE.contract) return <Shell>Set NEXT_PUBLIC_VERITY_CONTRACT first (see DEPLOY.md).</Shell>;
+  if (!LIVE.contract)
+    return (
+      <Shell>
+        <p className="text-[15px] text-muted">Live mode isn&apos;t set up on this site yet. The site owner deploys the contract and sets NEXT_PUBLIC_VERITY_CONTRACT (see DEPLOY.md in the repository).</p>
+      </Shell>
+    );
 
   const created = Object.keys(l.claims).length;
   const seeded = Object.values(l.claims).filter((c) => Number(c.yes) > 0).length;
   const isOwner = l.account && l.config?.owner === l.account;
 
-  const step = async (fn: () => Promise<unknown>) => {
-    setBusy(true);
-    try {
-      await fn();
-      await refresh();
-      toast("Done");
-    } catch (e) {
-      toast((e as Error).message?.slice(0, 140) || "Cancelled");
-    } finally {
-      setBusy(false);
-    }
-  };
+  const step = (fn: () => Promise<unknown>) =>
+    run(async () => {
+      try {
+        await fn();
+        await refresh();
+        toast("Done");
+      } catch (e) {
+        toast((e as Error).message?.slice(0, 140) || "Cancelled");
+      }
+    });
 
   const steps = [
     {
@@ -78,6 +82,7 @@ export function Admin() {
 
   return (
     <Shell>
+      <p className="mb-3 text-[15px] text-muted">For the site owner. These three steps open the Live markets; each one asks your wallet to confirm.</p>
       <p className="text-[15px] text-muted">
         Contract <span className="font-mono text-ink">{LIVE.contract}</span> · owner <span className="font-mono text-ink">{l.config?.owner ?? "…"}</span>
       </p>

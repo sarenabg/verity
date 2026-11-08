@@ -33,9 +33,25 @@ export function ArticleView({ article, initialFact }: { article: Article; initia
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [live, article.slug]);
 
+  const phone = () => window.matchMedia("(max-width: 1023px)").matches;
   const pick = (id: string) => {
     setSelected(id);
-    if (window.matchMedia("(max-width: 1023px)").matches) setSheet(true);
+    if (phone()) setSheet(true);
+  };
+
+  // Arriving from a link to one fact ("Bet on it", search, My bets): show it.
+  useEffect(() => {
+    if (!initialFact || CLAIM_BY_ID[initialFact]?.article !== article.slug) return;
+    if (phone()) setSheet(true);
+    else document.querySelector(`[data-fact="${initialFact}"]`)?.scrollIntoView({ block: "nearest" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Phones: after a bet that rewrote the page, close the sheet so the change is visible.
+  const afterSheetBet = (rewritten: boolean) => {
+    if (!rewritten) return;
+    setSheet(false);
+    requestAnimationFrame(() => document.querySelector(`[data-fact="${selected}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" }));
   };
 
   const revisions = b.revisions(article.slug);
@@ -45,7 +61,6 @@ export function ArticleView({ article, initialFact }: { article: Article; initia
 
   return (
     <main className="mx-auto max-w-6xl px-5 pt-10 pb-28 sm:px-10 lg:pb-10">
-      {/* The sticky card stays inside this row, so it never slides over "Keep reading". */}
       <div className="flex flex-wrap items-start gap-x-12 gap-y-10">
         <article className="min-w-0 flex-[999_1_560px]">
           <p className="mb-2 text-sm text-muted">
@@ -82,6 +97,7 @@ export function ArticleView({ article, initialFact }: { article: Article; initia
                       {/* A real <button> can't wrap across lines with the text around it, so this is a keyboard-usable span. */}
                       <span
                         key={text}
+                        data-fact={claim.id}
                         role="button"
                         tabIndex={0}
                         onClick={() => pick(claim.id)}
@@ -113,44 +129,59 @@ export function ArticleView({ article, initialFact }: { article: Article; initia
           <section className="mt-12 border-t border-line pt-6">
             <h2 className="mb-4 text-sm font-semibold text-ink">Page history</h2>
             <ol className="space-y-3 text-[15px]">
-              {revisions.slice(0, 12).map((r) => (
-                <li key={r.id} className="rise flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                  <span className="tabular w-20 shrink-0 text-sm text-faint">{ago(now, r.t)}</span>
-                  <button onClick={() => pick(r.claimId)} className="text-left text-body hover:underline">
-                    {CLAIM_BY_ID[r.claimId].question}
-                  </button>
-                  <span className="text-sm text-muted">
-                    {WORDING_LABEL[r.from]} → <strong className="font-semibold text-ink">{WORDING_LABEL[r.to]}</strong> at{" "}
-                    {r.price === 1 ? "settled True" : r.price === 0 ? "settled False" : pct(r.price)}
-                    {live ? "" : ` · ${r.writer === "near-ai" ? "NEAR AI" : "demo writer"}`}
-                  </span>
-                </li>
-              ))}
-              <li className="flex flex-wrap items-baseline gap-x-2">
-                <span className="w-20 shrink-0 text-sm text-faint">earlier</span>
+              {revisions.slice(0, 12).map((r) => {
+                const final = r.price === 1 || r.price === 0;
+                return (
+                  <li key={r.id} className="rise grid grid-cols-[5rem_1fr] items-baseline gap-x-2">
+                    <span className="tabular text-sm text-faint">{ago(now, r.t)}</span>
+                    <span className="min-w-0">
+                      <button onClick={() => pick(r.claimId)} className="text-left text-body hover:underline">
+                        {CLAIM_BY_ID[r.claimId].question}
+                      </button>
+                      <span className="block text-sm text-muted">
+                        {final ? (
+                          <>
+                            <strong className="font-semibold text-ink">Settled {r.price === 1 ? "True" : "False"}</strong> by the AI judge
+                            {r.from !== r.to ? ` · now ${WORDING_LABEL[r.to]}` : ""}
+                          </>
+                        ) : (
+                          <>
+                            {WORDING_LABEL[r.from]} → <strong className="font-semibold text-ink">{WORDING_LABEL[r.to]}</strong> at {pct(r.price)}
+                            {live ? "" : ` · ${r.writer === "near-ai" ? "written by NEAR AI" : "demo writer"}`}
+                          </>
+                        )}
+                      </span>
+                    </span>
+                  </li>
+                );
+              })}
+              <li className="grid grid-cols-[5rem_1fr] items-baseline gap-x-2">
+                <span className="text-sm text-faint">earlier</span>
                 <span className="text-muted">Page written from {claims.length} markets</span>
               </li>
             </ol>
           </section>
+
+          <nav className="mt-16 w-full border-t border-line pt-8" aria-label="More articles">
+            <p className="mb-4 text-sm text-muted">Keep reading</p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {others.map((a) => (
+                <Link key={a.slug} href={`/wiki/${a.slug}`} className="rounded-2xl border border-line bg-surface p-5 hover:border-line-strong">
+                  <span className="block font-serif text-xl">{a.title}</span>
+                  <span className="block text-sm text-muted">{a.blurb}</span>
+                </Link>
+              ))}
+            </div>
+          </nav>
         </article>
 
-        <aside className="hidden w-full lg:sticky lg:top-24 lg:block lg:w-[380px] lg:flex-[0_0_380px]">
+        {/* Never taller than the window, so the market's question and price stay in view while
+            you read; the list of other facts scrolls inside it when space is short. */}
+        <aside className="hidden w-full lg:sticky lg:top-24 lg:-mx-4 lg:block lg:max-h-[calc(100vh-7rem)] lg:w-[412px] lg:flex-[0_0_412px] lg:overflow-y-auto lg:overscroll-contain lg:px-4 lg:pb-4">
           <MarketCard key={selected} claim={CLAIM_BY_ID[selected]} />
           <OtherFacts claims={claims.map((c) => c.id)} selected={selected} pick={pick} />
         </aside>
       </div>
-
-      <nav className="mt-16 w-full border-t border-line pt-8" aria-label="More articles">
-        <p className="mb-4 text-sm text-muted">Keep reading</p>
-        <div className="grid gap-3 sm:grid-cols-3">
-          {others.map((a) => (
-            <Link key={a.slug} href={`/wiki/${a.slug}`} className="rounded-2xl border border-line bg-surface p-5 hover:border-line-strong">
-              <span className="block font-serif text-xl">{a.title}</span>
-              <span className="block text-sm text-muted">{a.blurb}</span>
-            </Link>
-          ))}
-        </div>
-      </nav>
 
       {/* Phones and tablets: a bar to open the bet sheet. */}
       <button onClick={() => setSheet(true)} className="fixed inset-x-3 bottom-3 z-30 flex items-center justify-between rounded-2xl bg-ink px-5 py-4 text-left text-white shadow-xl lg:hidden">
@@ -158,7 +189,7 @@ export function ArticleView({ article, initialFact }: { article: Article; initia
         <span className="text-sm font-semibold">{claims.length} facts</span>
       </button>
       <Sheet open={sheet} onClose={() => setSheet(false)} label={CLAIM_BY_ID[selected].question}>
-        <MarketCard key={`sheet-${selected}`} claim={CLAIM_BY_ID[selected]} />
+        <MarketCard key={`sheet-${selected}`} claim={CLAIM_BY_ID[selected]} onBet={afterSheetBet} />
         <OtherFacts claims={claims.map((c) => c.id)} selected={selected} pick={setSelected} />
       </Sheet>
     </main>

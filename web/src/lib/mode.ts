@@ -23,11 +23,15 @@ function load() {
   } catch {}
 }
 
-export function setMode(next: Mode) {
+/** remember: keep the choice for the next visit (the admin page switches without remembering). */
+export function setMode(next: Mode, remember = true) {
+  load();
   mode = next === "live" && !liveAvailable() ? "demo" : next;
-  try {
-    window.localStorage.setItem(KEY, mode);
-  } catch {}
+  if (remember) {
+    try {
+      window.localStorage.setItem(KEY, mode);
+    } catch {}
+  }
   listeners.forEach((l) => l());
 }
 

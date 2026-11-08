@@ -7,10 +7,11 @@ import type { WalletSelector } from "@near-wallet-selector/core";
 import { LIVE } from "./config";
 
 export const WALLETS = [
-  { id: "meteor-wallet", name: "Meteor Wallet", color: "#1C1917" },
-  { id: "hot-wallet", name: "HOT Wallet", color: "#F97316" },
-  { id: "my-near-wallet", name: "MyNearWallet", color: "#2563EB" },
-  { id: "intear-wallet", name: "Intear Wallet", color: "#14B8A6" },
+  // Logos come from each wallet's own @near-wallet-selector package (MIT / Apache-2.0).
+  { id: "meteor-wallet", name: "Meteor Wallet", icon: "/icons/wallets/meteor-wallet.png" },
+  { id: "hot-wallet", name: "HOT Wallet", icon: "/icons/wallets/hot-wallet.png" },
+  { id: "my-near-wallet", name: "MyNearWallet", icon: "/icons/wallets/my-near-wallet.png" },
+  { id: "intear-wallet", name: "Intear Wallet", icon: "/icons/wallets/intear-wallet.svg" },
 ] as const;
 
 let selectorPromise: Promise<WalletSelector> | null = null;

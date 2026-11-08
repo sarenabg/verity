@@ -12,6 +12,10 @@ export const LIVE = {
 
 export const liveAvailable = () => Boolean(LIVE.contract);
 
+/** Live on testnet uses test dollars; say so everywhere Live is named. */
+export const TESTNET = LIVE.network === "testnet";
+export const LIVE_NAME = TESTNET ? "Live · testnet" : "Live";
+
 export const USDC_DECIMALS = 6;
 export const toUnits = (usdc: number) => BigInt(Math.round(usdc * 10 ** USDC_DECIMALS));
 export const fromUnits = (units: string | number | bigint) => Number(units) / 10 ** USDC_DECIMALS;

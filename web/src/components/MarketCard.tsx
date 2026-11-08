@@ -11,8 +11,9 @@ import { LivePay } from "./LivePay";
 import { useConnect } from "./ModeControls";
 import { PayWithCoin } from "./PayWithCoin";
 import { bandHex, Sparkline, toast } from "./ui";
+import { useAction } from "./useAction";
 
-export function MarketCard({ claim, onBet }: { claim: Claim; onBet?: () => void }) {
+export function MarketCard({ claim, onBet }: { claim: Claim; onBet?: (rewritten: boolean) => void }) {
   const b = useBook();
   const p = b.price(claim.id);
   const verdict = b.settled(claim.id);
@@ -21,7 +22,8 @@ export function MarketCard({ claim, onBet }: { claim: Claim; onBet?: () => void 
   const [side, setSide] = useState<Side>(p < 0.5 ? "yes" : "no");
   const [amount, setAmount] = useState(live ? "0.5" : "20");
   const [payOpen, setPayOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [betting, runBet] = useAction();
+  const [judging, runJudge] = useAction();
   const openConnect = useConnect();
 
   useEffect(() => {
@@ -42,17 +44,16 @@ export function MarketCard({ claim, onBet }: { claim: Claim; onBet?: () => void 
   const notLive = live && !b.live?.claims[claim.id];
 
   const place = useCallback(
-    async (paidWith?: string) => {
-      if (live && !b.account) return openConnect();
-      setBusy(true);
-      const r = await b.buy(claim.id, side, usd, paidWith);
-      setBusy(false);
-      if (!r.ok) return toast(r.error);
-      onBet?.();
-      if (r.rewritten) toast("The AI rewrote this fact on the page", "rewrite");
-      else toast(`Bet placed: ${b.money(usd)} on ${side === "yes" ? "True" : "False"}`);
-    },
-    [b, claim.id, side, usd, live, openConnect, onBet],
+    (paidWith?: string) =>
+      runBet(async () => {
+        if (live && !b.account) return openConnect();
+        const r = await b.buy(claim.id, side, usd, paidWith);
+        if (!r.ok) return toast(r.error);
+        onBet?.(Boolean(r.rewritten));
+        if (r.rewritten) toast("The AI rewrote this fact on the page", "rewrite");
+        else toast(`Bet placed: ${b.money(usd)} on ${side === "yes" ? "True" : "False"}`);
+      }),
+    [b, claim.id, side, usd, live, openConnect, onBet, runBet],
   );
 
   const onPaid = useCallback(
@@ -102,6 +103,7 @@ export function MarketCard({ claim, onBet }: { claim: Claim; onBet?: () => void 
                   key={sd}
                   role="radio"
                   aria-checked={on}
+                  aria-label={`${sd === "yes" ? "True" : "False"}, ${cents(sd === "yes" ? p : 1 - p)} a share`}
                   onClick={() => setSide(sd)}
                   className={`rounded-2xl border-[1.5px] px-3 py-3.5 text-base font-semibold transition ${
                     on ? (sd === "yes" ? "border-certain bg-true-tint text-certain" : "border-unlikely bg-false-tint text-false") : "border-line text-muted hover:border-line-strong"
@@ -138,11 +140,11 @@ export function MarketCard({ claim, onBet }: { claim: Claim; onBet?: () => void 
           </div>
 
           <button
-            disabled={(!quote && !(live && !b.account)) || busy}
+            disabled={(!quote && !(live && !b.account)) || betting}
             onClick={() => void place()}
             className="w-full rounded-2xl bg-ink py-4 text-base font-semibold text-white transition hover:bg-black disabled:opacity-40"
           >
-            {live && !b.account ? "Connect a wallet to bet" : busy ? b.pending ?? "Placing bet…" : `Bet ${b.money(usd, live ? undefined : 0)} on ${side === "yes" ? "True" : "False"}`}
+            {live && !b.account ? "Connect a wallet to bet" : betting ? b.pending ?? "Placing bet…" : `Bet ${b.money(usd, live ? undefined : 0)} on ${side === "yes" ? "True" : "False"}`}
           </button>
           {live && b.account && <p className="mt-2 text-center text-[13px] text-faint">Your wallet asks you to confirm</p>}
           <button
@@ -163,7 +165,7 @@ export function MarketCard({ claim, onBet }: { claim: Claim; onBet?: () => void 
 
       {pos && (pos.yes > 1e-6 || pos.no > 1e-6) && <YourShares b={b} claimId={claim.id} yes={pos.yes} no={pos.no} settled={verdict} />}
 
-      <Settle b={b} claim={claim} ruling={b.ruling(claim.id)} settled={settled} busy={busy} setBusy={setBusy} />
+      <Settle b={b} claim={claim} ruling={b.ruling(claim.id)} settled={settled} busy={judging} run={runJudge} />
 
       <p className="tabular mt-5 text-sm text-muted">
         {b.people(claim) !== null ? `${b.people(claim)!.toLocaleString()} people · ` : ""}
@@ -197,6 +199,7 @@ export function MarketCard({ claim, onBet }: { claim: Claim; onBet?: () => void 
 }
 
 function YourShares({ b, claimId, yes, no, settled }: { b: Book; claimId: string; yes: number; no: number; settled?: boolean }) {
+  const [busy, run] = useAction();
   const pool = b.pool(claimId);
   const rows = (["yes", "no"] as const).filter((sd) => (sd === "yes" ? yes : no) > 1e-6);
   const live = b.mode === "live";
@@ -208,11 +211,14 @@ function YourShares({ b, claimId, yes, no, settled }: { b: Book; claimId: string
         <p className="tabular">{won > 0 ? <>You won <b>{b.money(won)}</b></> : "Your side lost this one."}</p>
         {won > 0 && (
           <button
-            onClick={async () => {
-              const r = await b.collect(claimId);
-              toast(r.ok ? "Sent to your wallet" : r.error);
-            }}
-            className="shrink-0 rounded-full bg-ink px-4 py-2 text-sm font-medium text-white"
+            disabled={busy}
+            onClick={() =>
+              run(async () => {
+                const r = await b.collect(claimId);
+                toast(r.ok ? "Sent to your wallet" : r.error);
+              })
+            }
+            className="shrink-0 rounded-full bg-ink px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
           >
             Collect
           </button>
@@ -233,12 +239,15 @@ function YourShares({ b, claimId, yes, no, settled }: { b: Book; claimId: string
               <p className="tabular text-sm text-faint">{b.money(shares, 2)} if right</p>
             </div>
             <button
-              onClick={async () => {
-                const r = await b.sell(claimId, sd, shares);
-                if (!r.ok) return toast(r.error);
-                toast(r.rewritten ? "Cashed out. The AI rewrote this fact on the page" : live ? "Cashed out. Withdraw it from My bets" : "Cashed out", r.rewritten ? "rewrite" : "info");
-              }}
-              className="shrink-0 rounded-full border border-line-strong bg-surface px-4 py-2 text-sm font-medium whitespace-nowrap hover:border-ink"
+              disabled={busy}
+              onClick={() =>
+                run(async () => {
+                  const r = await b.sell(claimId, sd, shares);
+                  if (!r.ok) return toast(r.error);
+                  toast(r.rewritten ? "Cashed out. The AI rewrote this fact on the page" : live ? "Cashed out. Withdraw it from My bets" : "Cashed out", r.rewritten ? "rewrite" : "info");
+                })
+              }
+              className="shrink-0 rounded-full border border-line-strong bg-surface px-4 py-2 text-sm font-medium whitespace-nowrap hover:border-ink disabled:opacity-50"
             >
               Cash out
             </button>
@@ -249,7 +258,7 @@ function YourShares({ b, claimId, yes, no, settled }: { b: Book; claimId: string
   );
 }
 
-function Settle({ b, claim, ruling, settled, busy, setBusy }: { b: Book; claim: Claim; ruling?: Ruling; settled: boolean; busy: boolean; setBusy: (x: boolean) => void }) {
+function Settle({ b, claim, ruling, settled, busy, run: guard }: { b: Book; claim: Claim; ruling?: Ruling; settled: boolean; busy: boolean; run: ReturnType<typeof useAction>[1] }) {
   const [now, setNow] = useState(0);
   useEffect(() => {
     setNow(Date.now());
@@ -257,12 +266,11 @@ function Settle({ b, claim, ruling, settled, busy, setBusy }: { b: Book; claim: 
     return () => clearInterval(t);
   }, []);
   const live = b.mode === "live";
-  const run = async (fn: () => Promise<{ ok: boolean; error?: string }>) => {
-    setBusy(true);
-    const r = await fn();
-    setBusy(false);
-    if (!r.ok && r.error) toast(r.error);
-  };
+  const run = (fn: () => Promise<{ ok: boolean; error?: string }>) =>
+    guard(async () => {
+      const r = await fn();
+      if (!r.ok && r.error) toast(r.error);
+    });
 
   if (!ruling) {
     if (settled || (live && !b.live?.claims[claim.id])) return null;

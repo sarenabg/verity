@@ -37,6 +37,12 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Keyboard focus is always visible (mouse clicks don't show it). */
+:where(a, button, [role="button"], [role="radio"], [tabindex]):focus-visible {
+  outline: 2px solid var(--color-likely);
+  outline-offset: 2px;
+}
+
 .tabular {
   font-variant-numeric: tabular-nums;
 }

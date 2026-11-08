@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { bandOf, type Band } from "@/lib/market";
 import type { Coin } from "@/lib/coins";
@@ -74,16 +77,67 @@ export function CoinIcon({ coin, size = 28 }: { coin: Coin; size?: number }) {
   );
 }
 
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/**
+ * Shared behaviour for every popup: Escape closes it, keyboard focus moves inside and stays
+ * there (Tab wraps around), the page behind doesn't scroll, and focus goes back to whatever
+ * opened it when it closes.
+ */
+function useDialog(open: boolean, onClose: () => void) {
+  const ref = useRef<HTMLDivElement>(null);
+  const close = useRef(onClose);
+  close.current = onClose;
+  useEffect(() => {
+    if (!open) return;
+    const before = document.activeElement as HTMLElement | null;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const box = ref.current;
+    // Start on the first real choice, not the close button.
+    const first = box?.querySelector<HTMLElement>("[data-autofocus]") ?? [...(box?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? [])].find((el) => el.getAttribute("aria-label") !== "Close");
+    (first ?? box)?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        close.current();
+        return;
+      }
+      if (e.key !== "Tab" || !box) return;
+      const items = [...box.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((el) => el.offsetParent !== null);
+      if (!items.length) return;
+      const [a, z] = [items[0], items[items.length - 1]];
+      if (e.shiftKey && (document.activeElement === a || !box.contains(document.activeElement))) {
+        e.preventDefault();
+        z.focus();
+      } else if (!e.shiftKey && (document.activeElement === z || !box.contains(document.activeElement))) {
+        e.preventDefault();
+        a.focus();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = overflow;
+      if (before && document.contains(before)) before.focus();
+    };
+  }, [open]);
+  return ref;
+}
+
 export function Modal({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode }) {
+  const ref = useDialog(open, onClose);
   if (!open || typeof document === "undefined") return null;
   // Rendered into <body> so a sticky parent can't trap it under the header.
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 p-0 backdrop-blur-[2px] sm:items-center sm:p-6" onClick={onClose}>
       <div
+        ref={ref}
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="pop max-h-[92vh] w-full overflow-y-auto rounded-t-3xl bg-surface p-6 shadow-2xl sm:max-w-md sm:rounded-3xl"
+        tabIndex={-1}
+        className="pop max-h-[92vh] w-full overflow-y-auto rounded-t-3xl bg-surface p-6 shadow-2xl outline-none sm:max-w-md sm:rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-5 flex items-center justify-between gap-4">
@@ -103,10 +157,11 @@ export function Modal({ open, onClose, title, children }: { open: boolean; onClo
 
 /** Phone bottom sheet (used below the lg breakpoint). */
 export function Sheet({ open, onClose, label, children }: { open: boolean; onClose: () => void; label: string; children: React.ReactNode }) {
+  const ref = useDialog(open, onClose);
   if (!open || typeof document === "undefined") return null;
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end bg-ink/40 lg:hidden" onClick={onClose}>
-      <div role="dialog" aria-modal="true" aria-label={label} className="rise max-h-[90vh] w-full overflow-y-auto rounded-t-[28px] bg-paper px-3 pt-3 pb-6" onClick={(e) => e.stopPropagation()}>
+      <div ref={ref} role="dialog" aria-modal="true" aria-label={label} tabIndex={-1} className="rise max-h-[90vh] w-full overflow-y-auto rounded-t-[28px] bg-paper px-3 pt-3 pb-6 outline-none" onClick={(e) => e.stopPropagation()}>
         <button onClick={onClose} aria-label="Close" className="mx-auto mb-3 block h-6 w-16">
           <span className="mx-auto block h-1.5 w-10 rounded-full bg-line-strong" />
         </button>

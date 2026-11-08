@@ -5,9 +5,10 @@ import { useBook, type Book } from "@/lib/book";
 import { LIVE } from "@/lib/config";
 import { CLAIM_BY_ID } from "@/lib/content";
 import { pct, quoteSell, type Side } from "@/lib/market";
-import { resetDemo, START_BALANCE } from "@/lib/store";
+import { resetDemo, START_BALANCE, type Trade } from "@/lib/store";
 import { useConnect } from "./ModeControls";
 import { bandHex, toast } from "./ui";
+import { useAction } from "./useAction";
 
 type Holding = { id: string; side: Side; shares: number; value: number; cost: number | null };
 
@@ -15,6 +16,7 @@ export function Bets() {
   const b = useBook();
   const live = b.mode === "live";
   const openConnect = useConnect();
+  const [busy, run] = useAction();
 
   const ids = live ? (b.live?.view?.positions.map((p) => p.claim) ?? []) : Object.keys(b.demo.positions);
   const holdings: Holding[] = ids.flatMap((id) => {
@@ -61,11 +63,14 @@ export function Bets() {
             <p className="tabular mt-1 text-2xl font-semibold">{b.money(b.credit)}</p>
             {b.credit > 0 && (
               <button
-                onClick={async () => {
-                  const r = await b.withdraw();
-                  toast(r.ok ? "Sent to your wallet" : r.error);
-                }}
-                className="mt-3 rounded-full bg-ink px-4 py-2 text-sm font-medium text-white"
+                disabled={busy}
+                onClick={() =>
+                  run(async () => {
+                    const r = await b.withdraw();
+                    toast(r.ok ? "Sent to your wallet" : r.error);
+                  })
+                }
+                className="mt-3 rounded-full bg-ink px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
               >
                 Withdraw to wallet
               </button>
@@ -91,11 +96,14 @@ export function Bets() {
                 <span className="min-w-0 flex-1 font-serif text-[18px]">{CLAIM_BY_ID[w.id]?.question ?? w.id}</span>
                 <span className="tabular font-semibold text-certain">{b.money(w.won)}</span>
                 <button
-                  onClick={async () => {
-                    const r = await b.collect(w.id);
-                    toast(r.ok ? "Sent to your wallet" : r.error);
-                  }}
-                  className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-white"
+                  disabled={busy}
+                  onClick={() =>
+                    run(async () => {
+                      const r = await b.collect(w.id);
+                      toast(r.ok ? "Sent to your wallet" : r.error);
+                    })
+                  }
+                  className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
                 >
                   Collect
                 </button>
@@ -130,15 +138,11 @@ export function Bets() {
             {b.demo.trades.slice(0, 30).map((t) => (
               <li key={t.id} className="flex flex-wrap justify-between gap-x-4 gap-y-1 rounded-xl px-1 py-1.5">
                 <span className="min-w-0 text-body">
-                  {t.kind === "payout" && !t.claimId
-                    ? "Added money"
-                    : t.kind === "payout"
-                      ? `Won: ${CLAIM_BY_ID[t.claimId]?.question}`
-                      : `${t.kind === "buy" ? "Bet" : "Cashed out"} ${t.side === "yes" ? "True" : "False"}: ${CLAIM_BY_ID[t.claimId]?.question}`}
+                  {activityLabel(t)}
                   {t.paidWith ? <span className="text-faint"> · paid {t.paidWith}</span> : null}
                 </span>
-                <span className={`tabular ${t.kind === "buy" ? "text-muted" : "text-certain"}`}>
-                  {t.kind === "buy" ? "−" : "+"}
+                <span className={`tabular ${spends(t) ? "text-muted" : "text-certain"}`}>
+                  {spends(t) ? "−" : "+"}
                   {b.money(t.amount, 2)}
                 </span>
               </li>
@@ -169,6 +173,7 @@ export function Bets() {
 }
 
 function Row({ b, h }: { b: Book; h: Holding }) {
+  const [busy, run] = useAction();
   const c = CLAIM_BY_ID[h.id];
   const p = b.price(h.id);
   const diff = h.cost === null ? null : h.value - h.cost;
@@ -193,17 +198,39 @@ function Row({ b, h }: { b: Book; h: Holding }) {
         )}
       </span>
       <button
-        onClick={async () => {
-          const r = await b.sell(h.id, h.side, h.shares);
-          if (!r.ok) return toast(r.error);
-          toast(r.rewritten ? "Cashed out. The AI rewrote this fact on the page" : "Cashed out", r.rewritten ? "rewrite" : "info");
-        }}
-        className="rounded-full border border-line-strong px-4 py-2 text-sm font-medium hover:border-ink"
+        disabled={busy}
+        onClick={() =>
+          run(async () => {
+            const r = await b.sell(h.id, h.side, h.shares);
+            if (!r.ok) return toast(r.error);
+            toast(r.rewritten ? "Cashed out. The AI rewrote this fact on the page" : "Cashed out", r.rewritten ? "rewrite" : "info");
+          })
+        }
+        className="rounded-full border border-line-strong px-4 py-2 text-sm font-medium hover:border-ink disabled:opacity-50"
       >
         Cash out
       </button>
     </li>
   );
+}
+
+const spends = (t: Trade) => t.kind === "buy" || t.kind === "deposit";
+
+function activityLabel(t: Trade): string {
+  const q = CLAIM_BY_ID[t.claimId]?.question ?? "";
+  const side = t.side === "yes" ? "True" : "False";
+  switch (t.kind) {
+    case "buy":
+      return `Bet ${side}: ${q}`;
+    case "sell":
+      return `Cashed out ${side}: ${q}`;
+    case "payout":
+      return t.claimId ? `Won: ${q}` : "Added money";
+    case "deposit":
+      return `Deposit for the AI judge: ${q}`;
+    case "refund":
+      return `Deposit back: ${q}`;
+  }
 }
 
 function Stat({ label, value, tone }: { label: string; value: string; tone?: string }) {

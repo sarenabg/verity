@@ -27,9 +27,9 @@ const STEPS = [
   },
   {
     t: "Checkable facts can be settled",
-    d: "Anyone can ask the AI judge for a final answer (with a $10 deposit). Anyone can dispute it within 48 hours (with a $20 deposit). A dispute goes to three different AI models, and the majority wins. Then winning shares pay $1.",
+    d: "Anyone can ask the AI judge for a final answer by leaving a small deposit. Anyone can dispute the answer for a while afterwards, with a bigger deposit. A dispute goes to three different AI models, and the majority wins. Then winning shares pay $1. In Demo the deposits are $10 and $20 and the wait is 48 hours.",
     art: (
-      <div className="flex items-center gap-2 text-sm">
+      <div className="flex flex-wrap items-center gap-2 text-sm">
         <span className="rounded-full bg-sunk px-3 py-1.5">Ask</span>→<span className="rounded-full bg-sunk px-3 py-1.5">Judge</span>→<span className="rounded-full bg-sunk px-3 py-1.5">48h</span>→
         <span className="rounded-full bg-ink px-3 py-1.5 text-white">Paid</span>
       </div>
@@ -52,7 +52,7 @@ const STEPS = [
 const REAL = [
   ["The betting math", "Same rules in the app and in the NEAR contract, with tests"],
   ["Prices in any coin", "Live quotes from NEAR Intents"],
-  ["The AI writer and judge", "NEAR AI, running in sealed computers, when a key is set"],
+  ["The AI writer and judge", "NEAR AI, running in sealed computers. When it's switched off, prewritten answers stand in."],
 ];
 const DEMO = [
   ["Your money", "$1,000 of play money, kept in your browser"],
@@ -72,7 +72,7 @@ export default function HowPage() {
               <h2 className="font-serif text-[24px] font-medium">{s.t}</h2>
               <p className="mt-1 text-[15px] leading-relaxed text-muted">{s.d}</p>
             </div>
-            <div className="shrink-0">{s.art}</div>
+            <div className="max-w-full min-w-0">{s.art}</div>
           </li>
         ))}
       </ol>

@@ -10,7 +10,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const a = ARTICLE_BY_SLUG[slug];
-  return { title: a ? `${a.title} · Verity` : "Verity" };
+  return { title: a ? `${a.title} · Verity` : "Page not found · Verity" };
 }
 
 export default async function WikiPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ fact?: string }> }) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { LIVE, liveAvailable } from "@/lib/config";
+import { LIVE, LIVE_NAME, liveAvailable, TESTNET } from "@/lib/config";
 import { refresh } from "@/lib/live";
 import { setMode, useMode } from "@/lib/mode";
 import { connect, disconnect, WALLETS } from "@/lib/wallet";
@@ -22,8 +22,8 @@ export function DemoStrip() {
       <span className="font-semibold">Demo</span>
       <span>Play money. Nothing real moves.</span>
       {liveAvailable() && (
-        <button onClick={() => open("mode")} className="font-semibold underline-offset-2 hover:underline">
-          Switch to Live
+        <button onClick={() => open("mode")} className="font-semibold underline underline-offset-2 hover:no-underline">
+          Switch to {LIVE_NAME}
         </button>
       )}
     </div>
@@ -36,10 +36,10 @@ export function ModePill() {
     <button
       onClick={() => open("mode")}
       className={`inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-2 text-sm font-medium ${mode === "live" ? "text-certain" : "text-amber-900"}`}
-      aria-label={`Mode: ${mode}. Change`}
+      aria-label={`Mode: ${mode === "live" ? LIVE_NAME : "Demo"}. Change`}
     >
       <span className={`size-2 rounded-full ${mode === "live" ? "bg-likely" : "bg-amber-500"}`} />
-      {mode === "live" ? "Live" : "Demo"}
+      {mode === "live" ? (TESTNET ? "Testnet" : "Live") : "Demo"}
     </button>
   );
 }
@@ -77,8 +77,14 @@ export function ModeWindows() {
         <Choice
           on={mode === "live"}
           tone="blue"
-          title="Live"
-          text={liveAvailable() ? "Real dollars (USDC) on NEAR. Your wallet confirms every bet." : "Coming soon: the live markets aren't open yet."}
+          title={LIVE_NAME}
+          text={
+            !liveAvailable()
+              ? "Coming soon: the live markets aren't open yet."
+              : TESTNET
+                ? "Test dollars on NEAR's test network. Your wallet confirms every bet; nothing has real value."
+                : "Real dollars (USDC) on NEAR. Your wallet confirms every bet."
+          }
           disabled={!liveAvailable()}
           onClick={() => {
             setMode("live");
@@ -108,13 +114,16 @@ export function ModeWindows() {
               }}
               className="flex items-center gap-3.5 rounded-2xl border border-line px-4 py-3.5 text-left text-base font-medium hover:border-ink disabled:opacity-50"
             >
-              <span className="size-9 rounded-xl" style={{ background: w.color }} />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={w.icon} alt="" width={36} height={36} className="size-9 rounded-xl" />
               {w.name}
               {busy === w.id && <span className="ml-auto size-2.5 animate-pulse rounded-full bg-certain" />}
             </button>
           ))}
         </div>
-        <p className="mt-5 text-sm text-muted">No USDC on NEAR? You can still bet with BTC, ETH, SOL and 200+ more coins.</p>
+        <p className="mt-5 text-sm text-muted">
+          {TESTNET ? "This is NEAR's test network: connect a testnet account. Test dollars have no real value." : "No USDC on NEAR? You can still bet with BTC, ETH, SOL and 200+ more coins."}
+        </p>
         <p className="mt-2 text-[13px] text-faint">Verity never sees your keys. Bets go to a public contract: {LIVE.contract}</p>
       </Modal>
     </>

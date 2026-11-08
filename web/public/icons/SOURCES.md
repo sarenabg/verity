@@ -1,6 +1,6 @@
 # Where these logos come from
 
-Collected by `research/build_logos.py`. The exact source of every file is listed under `sources` in `web/src/lib/logos.json`.
+Coin and chain logos (`coins/`, `chains/`) come from the sources below. Wallet logos (`wallets/`) are copied from each wallet's own `@near-wallet-selector` package (MIT / Apache-2.0). The Dogecoin logo is the plain Dogecoin "Ð" mark on its gold disc.
 
 - **web3icons** (`@web3icons/core`), MIT licence: https://github.com/0xa3k5/web3icons
 - **On-chain NEAR metadata:** the icon a NEAR token publishes in its own `ft_metadata`.

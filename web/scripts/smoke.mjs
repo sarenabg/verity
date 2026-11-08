@@ -47,7 +47,8 @@ try {
   await page("/admin", "Set up live markets");
   await page("/how", "How Verity works", "Checkable facts can be settled");
   const missing = await fetch(`${BASE}/wiki/not-a-page`);
-  check(missing.status === 404, `GET /wiki/not-a-page → 404`);
+  const missingHtml = await missing.text();
+  check(missing.status === 404 && missingHtml.includes("no page here") && missingHtml.includes("Back to the start"), `GET /wiki/not-a-page → 404 with a way back`);
 
   const lj = await post("/api/live/judge", { claimId: "nope" });
   check(lj.status === 400, "/api/live/judge rejects unknown facts");

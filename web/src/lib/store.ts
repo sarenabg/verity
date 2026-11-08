@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { ARTICLES, CLAIM_BY_ID, CLAIMS, type Claim } from "./content";
-import { priceOf, quoteBuy, quoteSell, seedPool, wordingOf, type Pool, type Side, type Wording } from "./market";
+import { money, priceOf, quoteBuy, quoteSell, seedPool, wordingOf, type Pool, type Side, type Wording } from "./market";
 import type { Proof } from "./nearai";
 
 // Everything the demo remembers lives here, in the visitor's browser
@@ -20,7 +20,8 @@ export type Trade = {
   id: string;
   t: number;
   claimId: string;
-  kind: "buy" | "sell" | "payout";
+  /** deposit / refund: the AI judge's deposits going out and coming back. */
+  kind: "buy" | "sell" | "payout" | "deposit" | "refund";
   side: Side;
   amount: number;
   shares: number;
@@ -86,6 +87,8 @@ let state: State = SERVER_STATE;
 let loaded = false;
 const listeners = new Set<() => void>();
 
+let firstLoad = true;
+
 function load() {
   if (loaded || typeof window === "undefined") return;
   loaded = true;
@@ -96,11 +99,37 @@ function load() {
       if (saved.v === 1) {
         // Keep pools for any claims added since the save.
         state = { ...initialState(), ...saved, pools: { ...initialState().pools, ...saved.pools } };
+        // A page that was closed or refreshed while the judge was thinking can't get the answer.
+        if (firstLoad) state = recoverInterrupted(state);
       }
     }
   } catch {
     // Private window or blocked storage: start fresh, nothing is saved.
   }
+  firstLoad = false;
+}
+
+/**
+ * Undo judge requests that were cut off by a refresh: the deposit comes back and the fact is
+ * as it was (a cut-off dispute goes back to the judge's answer, with the dispute window intact).
+ */
+export function recoverInterrupted(s: State): State {
+  let next = s;
+  for (const [id, r] of Object.entries(s.rulings)) {
+    if (r.stage === "judging") {
+      const rulings = { ...next.rulings };
+      delete rulings[id];
+      next = { ...next, balance: next.balance + RULING_BOND, trades: [bondTrade(id, "refund", RULING_BOND), ...next.trades], rulings };
+    } else if (r.stage === "panel") {
+      next = {
+        ...next,
+        balance: next.balance + DISPUTE_BOND,
+        trades: [bondTrade(id, "refund", DISPUTE_BOND), ...next.trades],
+        rulings: { ...next.rulings, [id]: { ...r, stage: "proposed", disputed: false } },
+      };
+    }
+  }
+  return next;
 }
 
 function set(next: State) {
@@ -314,11 +343,25 @@ async function callJudge(claimId: string, panel: boolean): Promise<JudgeReply> {
   return res.json();
 }
 
+/** A line in My bets for a deposit paid (−) or returned (+). */
+function bondTrade(claimId: string, kind: "deposit" | "refund", amount: number): Trade {
+  return { id: uid(), t: Date.now(), claimId, kind, side: "yes", amount, shares: 0, before: 0, after: 0 };
+}
+
+const ACTIVE: Ruling["stage"][] = ["judging", "proposed", "panel", "final"];
+
 export async function requestRuling(claimId: string): Promise<{ ok: boolean; error?: string }> {
   const s = getState();
   if (claimId in s.settled) return { ok: false, error: "Already settled." };
-  if (s.balance < RULING_BOND) return { ok: false, error: `You need ${RULING_BOND} dollars for the deposit.` };
-  set({ ...s, balance: s.balance - RULING_BOND, rulings: { ...s.rulings, [claimId]: { stage: "judging", requestedAt: Date.now() } } });
+  const existing = s.rulings[claimId];
+  if (existing && ACTIVE.includes(existing.stage)) return { ok: false, error: "The judge is already on this one." };
+  if (s.balance < RULING_BOND) return { ok: false, error: `You need ${money(RULING_BOND)} for the deposit. Add money first.` };
+  set({
+    ...s,
+    balance: s.balance - RULING_BOND,
+    trades: [bondTrade(claimId, "deposit", RULING_BOND), ...s.trades],
+    rulings: { ...s.rulings, [claimId]: { stage: "judging", requestedAt: Date.now() } },
+  });
   try {
     const r = await callJudge(claimId, false);
     const now = getState();
@@ -326,6 +369,7 @@ export async function requestRuling(claimId: string): Promise<{ ok: boolean; err
       set({
         ...now,
         balance: now.balance + RULING_BOND,
+        trades: [bondTrade(claimId, "refund", RULING_BOND), ...now.trades],
         rulings: { ...now.rulings, [claimId]: { stage: "unsettled", verdict: r.verdict, reason: r.reason, votes: r.votes, requestedAt: Date.now(), outcome: "Not enough evidence yet. Deposit returned; the market stays open." } },
       });
     } else {
@@ -339,7 +383,7 @@ export async function requestRuling(claimId: string): Promise<{ ok: boolean; err
     const now = getState();
     const rulings = { ...now.rulings };
     delete rulings[claimId];
-    set({ ...now, balance: now.balance + RULING_BOND, rulings });
+    set({ ...now, balance: now.balance + RULING_BOND, trades: [bondTrade(claimId, "refund", RULING_BOND), ...now.trades], rulings });
     return { ok: false, error: (e as Error).message };
   }
 }
@@ -348,34 +392,49 @@ export async function dispute(claimId: string): Promise<{ ok: boolean; error?: s
   const s = getState();
   const r = s.rulings[claimId];
   if (!r || r.stage !== "proposed") return { ok: false, error: "Nothing to dispute." };
-  if (s.balance < DISPUTE_BOND) return { ok: false, error: `You need ${DISPUTE_BOND} dollars for the deposit.` };
-  set({ ...s, balance: s.balance - DISPUTE_BOND, rulings: { ...s.rulings, [claimId]: { ...r, stage: "panel", disputed: true } } });
+  if (s.balance < DISPUTE_BOND) return { ok: false, error: `You need ${money(DISPUTE_BOND)} for the deposit. Add money first.` };
+  set({
+    ...s,
+    balance: s.balance - DISPUTE_BOND,
+    trades: [bondTrade(claimId, "deposit", DISPUTE_BOND), ...s.trades],
+    rulings: { ...s.rulings, [claimId]: { ...r, stage: "panel", disputed: true } },
+  });
   try {
     const p = await callJudge(claimId, true);
     const now = getState();
     const base = { ...now.rulings[claimId], panelVotes: p.votes, reason: p.reason };
+    // Same rules as the contract. In the demo you both asked for the ruling and disputed it,
+    // so whichever side wins the two deposits, they come back to you.
+    const both = DISPUTE_BOND + RULING_BOND;
+    const refund = [bondTrade(claimId, "refund", both), ...now.trades];
     if (p.verdict === r.verdict) {
-      // The panel agrees with the first ruling: dispute deposit is lost, the fact settles.
-      set({ ...now, rulings: { ...now.rulings, [claimId]: { ...base, stage: "final", outcome: "The panel agreed with the judge. The dispute deposit was lost." } } });
+      set({
+        ...now,
+        balance: now.balance + both,
+        trades: refund,
+        rulings: { ...now.rulings, [claimId]: { ...base, stage: "final", outcome: "The panel agreed with the judge. Both deposits go to whoever asked for the ruling (you, in this demo)." } },
+      });
       settle(claimId, p.verdict === "true");
     } else if (p.verdict === "unsettled") {
       set({
         ...now,
-        balance: now.balance + DISPUTE_BOND + RULING_BOND,
+        balance: now.balance + both,
+        trades: refund,
         rulings: { ...now.rulings, [claimId]: { ...base, stage: "unsettled", verdict: "unsettled", outcome: "The panel couldn't agree. Deposits returned; the market stays open." } },
       });
     } else {
       set({
         ...now,
-        balance: now.balance + DISPUTE_BOND + RULING_BOND,
-        rulings: { ...now.rulings, [claimId]: { ...base, stage: "final", verdict: p.verdict, outcome: "The panel overturned the judge. The disputer won the request deposit." } },
+        balance: now.balance + both,
+        trades: refund,
+        rulings: { ...now.rulings, [claimId]: { ...base, stage: "final", verdict: p.verdict, outcome: "The panel overturned the judge. Both deposits go to whoever disputed (you, in this demo)." } },
       });
       settle(claimId, p.verdict === "true");
     }
     return { ok: true };
   } catch (e) {
     const now = getState();
-    set({ ...now, balance: now.balance + DISPUTE_BOND, rulings: { ...now.rulings, [claimId]: r } });
+    set({ ...now, balance: now.balance + DISPUTE_BOND, trades: [bondTrade(claimId, "refund", DISPUTE_BOND), ...now.trades], rulings: { ...now.rulings, [claimId]: r } });
     return { ok: false, error: (e as Error).message };
   }
 }
@@ -385,7 +444,12 @@ export function skipWindow(claimId: string) {
   const s = getState();
   const r = s.rulings[claimId];
   if (!r || r.stage !== "proposed" || r.verdict === "unsettled" || !r.verdict) return;
-  set({ ...s, balance: s.balance + RULING_BOND, rulings: { ...s.rulings, [claimId]: { ...r, stage: "final", outcome: "No one disputed. Deposit returned." } } });
+  set({
+    ...s,
+    balance: s.balance + RULING_BOND,
+    trades: [bondTrade(claimId, "refund", RULING_BOND), ...s.trades],
+    rulings: { ...s.rulings, [claimId]: { ...r, stage: "final", outcome: "No one disputed. Deposit returned." } },
+  });
   settle(claimId, r.verdict === "true");
 }
 
@@ -399,7 +463,8 @@ function settle(claimId: string, truth: boolean) {
   const claim = CLAIM_BY_ID[claimId];
   const from = wordingOf(before);
   const to: Wording = truth ? "yes" : "no";
-  const revisions = from !== to ? [{ id: uid(), t: Date.now(), slug: claim.article, claimId, from, to, price: truth ? 1 : 0, writer: "demo" as const }, ...s.revisions] : s.revisions;
+  // Settling is always news on the page, even when the wording doesn't change.
+  const revisions = [{ id: uid(), t: Date.now(), slug: claim.article, claimId, from, to, price: truth ? 1 : 0, writer: "demo" as const }, ...s.revisions];
   set({
     ...s,
     balance: s.balance + win,
