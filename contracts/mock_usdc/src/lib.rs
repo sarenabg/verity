@@ -91,3 +91,45 @@ impl FungibleTokenMetadataProvider for Contract {
         FungibleTokenMetadata { spec: FT_METADATA_SPEC.to_string(), name: "Test USDC".into(), symbol: "USDC".into(), icon: None, reference: None, reference_hash: None, decimals: 6 }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use near_sdk::test_utils::{accounts, VMContextBuilder};
+    use near_sdk::testing_env;
+
+    fn as_caller(who: usize, deposit: NearToken) {
+        testing_env!(VMContextBuilder::new().predecessor_account_id(accounts(who)).attached_deposit(deposit).build());
+    }
+
+    #[test]
+    fn mint_registers_the_account_and_adds_to_supply() {
+        as_caller(0, NearToken::from_yoctonear(0));
+        let mut c = Contract::new();
+        c.mint(accounts(1), U128(25_000_000));
+        c.mint(accounts(1), U128(5_000_000));
+        assert_eq!(c.ft_balance_of(accounts(1)).0, 30_000_000);
+        assert_eq!(c.ft_total_supply().0, 30_000_000);
+        assert_eq!(c.ft_metadata().decimals, 6);
+    }
+
+    #[test]
+    #[should_panic(expected = "At most 1,000 test USDC per call")]
+    fn mint_is_capped_per_call() {
+        as_caller(0, NearToken::from_yoctonear(0));
+        let mut c = Contract::new();
+        c.mint(accounts(1), U128(1_000_000_001));
+    }
+
+    #[test]
+    fn transfer_moves_tokens_between_registered_accounts() {
+        as_caller(0, NearToken::from_yoctonear(0));
+        let mut c = Contract::new();
+        c.mint(accounts(1), U128(10_000_000));
+        c.mint(accounts(2), U128(0));
+        as_caller(1, NearToken::from_yoctonear(1));
+        c.ft_transfer(accounts(2), U128(4_000_000), None);
+        assert_eq!(c.ft_balance_of(accounts(1)).0, 6_000_000);
+        assert_eq!(c.ft_balance_of(accounts(2)).0, 4_000_000);
+    }
+}

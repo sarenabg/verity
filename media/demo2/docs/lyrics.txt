@@ -1,0 +1,27 @@
+# narration lines, windows from audio/vo.json
+@ 0.75 5.90 line1
+This is Verity, an encyclopedia where every fact has a price.
+@ 6.42 15.91 line2
+Open any article. Each underlined sentence is a fact with its own market. Blue means people are sure. Orange means it's probably a myth.
+@ 16.42 25.06 line3
+Did George Mallory reach the top of Everest in 1924?|nineteen_twenty_four The market says fourteen percent. Let's bet a hundred dollars that he did.
+@ 25.42 32.82 line4
+Our bet pushes the odds past thirty percent, so the AI|a_i rewrites the sentence. It's now an open question.
+@ 33.08 38.74 line5
+Every change is logged in the page history, and you can cash out at today's price, any time.
+@ 39.08 48.34 line6
+No dollars handy? Pay with Ethereum, Bitcoin, Solana, or two hundred other coins. NEAR Intents changes them into dollars in seconds.
+@ 48.75 58.87 line7
+Some facts can be checked. Can you see the Great Wall from space? Ask the AI|a_i judge. It says false, and when the waiting time is over, winners get paid.
+@ 59.42 64.43 line8
+Think the judge got it wrong? Dispute it, and three different AI|a_i models vote.
+@ 64.75 69.16 line9
+If there's no proof yet, the judge says so, and the market stays open.
+@ 69.42 73.50 line10
+My bets shows your money, your bets, and how they're doing.
+@ 74.08 81.46 line11
+Ready for real money? Switch to Live. You bet in real dollars on NEAR, and your own wallet confirms every step.
+@ 81.75 83.51 line12
+It works on your phone, too.
+@ 84.42 88.90 line13
+Verity. The encyclopedia that knows how sure it is.

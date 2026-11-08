@@ -1,0 +1,126 @@
+{
+ "bpm": 120.0,
+ "period": 0.5,
+ "duration": 46.0,
+ "lines": [
+  {
+   "clip": "p1.mp3",
+   "text": "Encyclopedias tell you what's true. But never how sure anyone is.",
+   "t0": 0.5,
+   "t1": 5.23,
+   "pauses": [
+    [
+     2.625,
+     3.155
+    ]
+   ]
+  },
+  {
+   "clip": "p2.mp3",
+   "text": "Meet Verity: the encyclopedia where every fact has a price.",
+   "t0": 6.0,
+   "t1": 10.175,
+   "pauses": [
+    [
+     6.72,
+     7.26
+    ]
+   ]
+  },
+  {
+   "clip": "p3.mp3",
+   "text": "Think George Mallory reached the top of Everest first, in 1924? Put money on it.",
+   "t0": 11.0,
+   "t1": 16.495,
+   "pauses": [
+    [
+     13.76,
+     13.93
+    ],
+    [
+     14.955,
+     15.43
+    ]
+   ]
+  },
+  {
+   "clip": "p4.mp3",
+   "text": "As people bet, the odds move, and the AI rewrites the page to match.",
+   "t0": 17.25,
+   "t1": 21.91,
+   "pauses": [
+    [
+     18.185,
+     18.39
+    ],
+    [
+     19.235,
+     19.595
+    ],
+    [
+     21.72,
+     21.84
+    ]
+   ]
+  },
+  {
+   "clip": "p5.mp3",
+   "text": "Pay with any coin you already own.",
+   "t0": 22.75,
+   "t1": 24.8,
+   "pauses": []
+  },
+  {
+   "clip": "p6.mp3",
+   "text": "When a fact can be checked, an AI judge settles it. Disagree? Three AIs vote.",
+   "t0": 25.5,
+   "t1": 31.175,
+   "pauses": [
+    [
+     26.845,
+     27.075
+    ],
+    [
+     28.525,
+     29.06
+    ],
+    [
+     29.585,
+     30.115
+    ]
+   ]
+  },
+  {
+   "clip": "p7.mp3",
+   "text": "Facts nobody can prove yet stay open. Honestly.",
+   "t0": 32.0,
+   "t1": 35.72,
+   "pauses": [
+    [
+     33.6,
+     33.795
+    ],
+    [
+     34.525,
+     35.22
+    ]
+   ]
+  },
+  {
+   "clip": "p8.mp3",
+   "text": "Verity. The encyclopedia that knows how sure it is. Built on NEAR.",
+   "t0": 36.75,
+   "t1": 42.28,
+   "pauses": [
+    [
+     37.25,
+     37.88
+    ],
+    [
+     40.63,
+     41.18
+    ]
+   ]
+  }
+ ]
+}

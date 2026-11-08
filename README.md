@@ -60,6 +60,11 @@ cargo test           # 22 contract tests
 cargo near build non-reproducible-wasm --skip-rust-version-check   # builds target/near/verity_market.wasm
 ```
 
+```bash
+cd contracts/mock_usdc
+cargo test           # 3 tests for the test-network USDC stand-in
+```
+
 Live mode was tested end to end on **NEAR testnet**, with throwaway accounts and a test USDC token (`contracts/mock_usdc`):
 
 ```bash

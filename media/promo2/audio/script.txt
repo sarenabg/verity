@@ -1,0 +1,9 @@
+# one line per clip in audio/vo/ (sorted); optional "pause|" prefix = extra seconds of silence before the line
+Encyclopedias tell you what's true. But never how sure anyone is.
+Meet Verity: the encyclopedia where every fact has a price.
+Think George Mallory reached the top of Everest first, in 1924? Put money on it.
+As people bet, the odds move, and the AI rewrites the page to match.
+Pay with any coin you already own.
+When a fact can be checked, an AI judge settles it. Disagree? Three AIs vote.
+Facts nobody can prove yet stay open. Honestly.
+0.3|Verity. The encyclopedia that knows how sure it is. Built on NEAR.

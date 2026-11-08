@@ -1,0 +1,238 @@
+{
+ "bpm": 90.0,
+ "period": 0.6666666666666666,
+ "duration": 93.333,
+ "lines": [
+  {
+   "clip": "w01.mp3",
+   "text": "This is Verity, an encyclopedia where every fact has a price.",
+   "t0": 1.0,
+   "t1": 5.65,
+   "pauses": [
+    [
+     2.03,
+     2.525
+    ],
+    [
+     4.705,
+     4.83
+    ]
+   ]
+  },
+  {
+   "clip": "w02.mp3",
+   "text": "Open any article. Each underlined sentence is a fact with its own market. Blue means people are sure. Orange means it's probably a myth.",
+   "t0": 6.667,
+   "t1": 15.662,
+   "pauses": [
+    [
+     7.792,
+     8.337
+    ],
+    [
+     11.292,
+     11.807
+    ],
+    [
+     13.252,
+     13.752
+    ],
+    [
+     14.767,
+     14.977
+    ]
+   ]
+  },
+  {
+   "clip": "w03.mp3",
+   "text": "Did George Mallory reach the top of Everest in 1924? The market says fourteen percent. Let's bet a hundred dollars that he did.",
+   "t0": 16.667,
+   "t1": 24.812,
+   "pauses": [
+    [
+     20.102,
+     20.667
+    ],
+    [
+     22.557,
+     23.052
+    ]
+   ]
+  },
+  {
+   "clip": "w04.mp3",
+   "text": "Our bet pushes the odds past thirty percent, so the AI rewrites the sentence. It's now an open question.",
+   "t0": 25.667,
+   "t1": 32.567,
+   "pauses": [
+    [
+     26.027,
+     26.152
+    ],
+    [
+     28.252,
+     28.492
+    ],
+    [
+     30.572,
+     31.042
+    ]
+   ]
+  },
+  {
+   "clip": "w05.mp3",
+   "text": "Every change is logged in the page history, and you can cash out at today's price, any time.",
+   "t0": 33.333,
+   "t1": 38.493,
+   "pauses": [
+    [
+     35.473,
+     35.703
+    ],
+    [
+     37.718,
+     38.008
+    ]
+   ]
+  },
+  {
+   "clip": "w06.mp3",
+   "text": "No dollars handy? Pay with Ethereum, Bitcoin, Solana, or two hundred other coins. NEAR Intents changes them into dollars in seconds.",
+   "t0": 39.333,
+   "t1": 48.088,
+   "pauses": [
+    [
+     40.248,
+     40.683
+    ],
+    [
+     41.508,
+     41.798
+    ],
+    [
+     44.743,
+     45.168
+    ],
+    [
+     47.803,
+     47.948
+    ]
+   ]
+  },
+  {
+   "clip": "w07.mp3",
+   "text": "Some facts can be checked. Can you see the Great Wall from space? Ask the AI judge. It says false, and when the waiting time is over, winners get paid.",
+   "t0": 49.0,
+   "t1": 58.615,
+   "pauses": [
+    [
+     50.33,
+     50.84
+    ],
+    [
+     52.745,
+     53.22
+    ],
+    [
+     54.295,
+     54.825
+    ],
+    [
+     55.785,
+     56.03
+    ],
+    [
+     57.4,
+     57.64
+    ]
+   ]
+  },
+  {
+   "clip": "w08.mp3",
+   "text": "Think the judge got it wrong? Dispute it, and three different AI models vote.",
+   "t0": 59.667,
+   "t1": 64.182,
+   "pauses": [
+    [
+     60.832,
+     61.232
+    ],
+    [
+     61.752,
+     62.077
+    ]
+   ]
+  },
+  {
+   "clip": "w09.mp3",
+   "text": "If there's no proof yet, the judge says so, and the market stays open.",
+   "t0": 65.0,
+   "t1": 68.91,
+   "pauses": [
+    [
+     66.105,
+     66.42
+    ],
+    [
+     67.405,
+     67.665
+    ]
+   ]
+  },
+  {
+   "clip": "w10.mp3",
+   "text": "My bets shows your money, your bets, and how they're doing.",
+   "t0": 69.667,
+   "t1": 73.252,
+   "pauses": [
+    [
+     71.342,
+     71.597
+    ]
+   ]
+  },
+  {
+   "clip": "w11.mp3",
+   "text": "Ready for real money? Switch to Live. You bet in real dollars on NEAR, and your own wallet confirms every step.",
+   "t0": 74.333,
+   "t1": 81.208,
+   "pauses": [
+    [
+     75.263,
+     75.613
+    ],
+    [
+     76.413,
+     76.903
+    ],
+    [
+     78.858,
+     79.043
+    ],
+    [
+     80.488,
+     80.608
+    ]
+   ]
+  },
+  {
+   "clip": "w12.mp3",
+   "text": "It works on your phone, too.",
+   "t0": 82.0,
+   "t1": 83.26,
+   "pauses": []
+  },
+  {
+   "clip": "w13.mp3",
+   "text": "Verity. The encyclopedia that knows how sure it is.",
+   "t0": 84.667,
+   "t1": 88.647,
+   "pauses": [
+    [
+     85.197,
+     85.752
+    ]
+   ]
+  }
+ ]
+}

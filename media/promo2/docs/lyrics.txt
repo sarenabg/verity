@@ -1,0 +1,17 @@
+# narration lines, windows from audio/vo.json
+@ 0.25 5.48 line1
+Encyclopedias tell you what's true. But never how sure anyone is.
+@ 5.75 10.43 line2
+Meet Verity: the encyclopedia where every fact has a price.
+@ 10.75 16.75 line3
+Think George Mallory reached the top of Everest first, in 1924?|nineteen_twenty_four Put money on it.
+@ 17.00 22.16 line4
+As people bet, the odds move, and the AI|a_i rewrites the page to match.
+@ 22.50 25.05 line5
+Pay with any coin you already own.
+@ 25.25 31.43 line6
+When a fact can be checked, an AI|a_i judge settles it. Disagree? Three AIs|a_i_s vote.
+@ 31.75 35.97 line7
+Facts nobody can prove yet stay open. Honestly.
+@ 36.50 42.53 line8
+Verity. The encyclopedia that knows how sure it is. Built on NEAR.
