@@ -1,0 +1,126 @@
+{
+ "url": "https://verity-pied-phi.vercel.app",
+ "title": "Verity: the encyclopedia that knows how sure it is",
+ "description": "Every fact has a market behind it. AI writes each page from the odds. Built on NEAR.",
+ "themeColor": [],
+ "text_colors": [
+  [
+   "#1c1917",
+   21
+  ],
+  [
+   "#57534e",
+   20
+  ],
+  [
+   "#6b645d",
+   11
+  ],
+  [
+   "#ffffff",
+   6
+  ],
+  [
+   "#7b3306",
+   3
+  ],
+  [
+   "#292524",
+   1
+  ],
+  [
+   "#9a3412",
+   1
+  ],
+  [
+   "#2563eb",
+   1
+  ]
+ ],
+ "background_colors": [
+  [
+   "#ffffff",
+   53
+  ],
+  [
+   "#efeaf6",
+   7
+  ],
+  [
+   "#e8eef8",
+   7
+  ],
+  [
+   "#f8ece6",
+   7
+  ],
+  [
+   "#e9f1ea",
+   6
+  ],
+  [
+   "#f3eedf",
+   6
+  ],
+  [
+   "#f6e9ea",
+   6
+  ],
+  [
+   "#fef3c6",
+   5
+  ],
+  [
+   "#1c1917",
+   2
+  ],
+  [
+   "#f1ece3",
+   1
+  ]
+ ],
+ "font_families": [
+  [
+   "Inter",
+   44
+  ],
+  [
+   "Newsreader",
+   20
+  ]
+ ],
+ "font_weights": [
+  [
+   "Inter 400",
+   28
+  ],
+  [
+   "Inter 600",
+   10
+  ],
+  [
+   "Newsreader 500",
+   10
+  ],
+  [
+   "Newsreader 400",
+   9
+  ],
+  [
+   "Inter 500",
+   6
+  ],
+  [
+   "Newsreader 600",
+   1
+  ]
+ ],
+ "css_vars": {},
+ "wordmark": {
+  "text": "Verity",
+  "font": "Inter, \"Inter Fallback\", ui-sans-serif, system-ui, sans-serif",
+  "weight": "400",
+  "tracking": "normal",
+  "html": "<span class=\"inline-flex items-center gap-2.5\"><svg width=\"26\" height=\"26\" viewBox=\"0 0 26 26\" aria-hidden=\"true\"><circle cx=\"13\" cy=\"13\" r=\"12\" fill=\"none\" stroke=\"#1C1917\" stroke-width=\"1.5\"></circle><path d=\"M7 13.5l4 4 8-9\" fill=\"none\" stroke=\"#1E40AF\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"></path></svg><span class=\"font-serif text-[24px] font-semibold tracking-tight"
+ }
+}

@@ -336,7 +336,7 @@ function fmtLeft(ms: number): string {
   const s = Math.floor(ms / 1000);
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
-  return h > 0 ? `${h}:${String(m).padStart(2, "0")}h` : `${m}:${String(s % 60).padStart(2, "0")}`;
+  return h > 0 ? `${h}h ${m}m` : `${m}:${String(s % 60).padStart(2, "0")}`;
 }
 
 function Votes({ votes }: { votes: Vote[] }) {

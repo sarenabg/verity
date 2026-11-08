@@ -1,6 +1,7 @@
 node_modules/
 .next/
 .next-build/
+.next-dev/
 out/
 .env*
 !.env.example
@@ -8,3 +9,4 @@ out/
 next-env.d.ts
 contracts/*/target/
 .DS_Store
+.vercel
